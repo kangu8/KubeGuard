@@ -1,0 +1,102 @@
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubeguard-api-data
+  namespace: kubeguard
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeguard-api
+  namespace: kubeguard
+  labels:
+    app: kubeguard-api
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kubeguard-api
+  template:
+    metadata:
+      labels:
+        app: kubeguard-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: api
+          image: kubeguard-api:0.3.0
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 8000
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /app/data
+
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: kubeguard-api-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubeguard-api
+  namespace: kubeguard
+spec:
+  type: ClusterIP
+  selector:
+    app: kubeguard-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP

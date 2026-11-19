@@ -1,0 +1,4 @@
+﻿NAME                             READY   STATUS    RESTARTS   AGE    IP           NODE                     NOMINATED NODE   READINESS GATES
+kubeguard-api-6c445df797-zgnfz   1/1     Running   0          105s   10.42.1.11   k3d-kubeguard-server-0   <none>           <none>
+kubeguard-web-59dc47f766-7tz2n   1/1     Running   0          173m   10.42.0.5    k3d-kubeguard-agent-0    <none>           <none>
+kubeguard-web-59dc47f766-lqw4z   1/1     Running   0          173m   10.42.1.7    k3d-kubeguard-server-0   <none>           <none>

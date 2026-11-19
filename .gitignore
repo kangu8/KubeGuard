@@ -23,3 +23,9 @@ __pycache__/
 # Operating system
 .DS_Store
 Thumbs.db
+
+# Local database files
+data/
+
+# Pytest cache
+.pytest_cache/

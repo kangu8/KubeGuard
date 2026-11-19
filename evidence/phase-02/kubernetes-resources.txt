@@ -1,0 +1,10 @@
+﻿NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/kubeguard-api   1/1     1            1           12m
+deployment.apps/kubeguard-web   2/2     2            2           173m
+
+NAME                    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/kubeguard-api   ClusterIP   10.43.211.76   <none>        8000/TCP   12m
+service/kubeguard-web   ClusterIP   10.43.47.12    <none>        80/TCP     173m
+
+NAME                                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/kubeguard-api-data   Bound    pvc-90a44572-fe37-4908-86b1-2996359109b3   1Gi        RWO            local-path     <unset>                 12m

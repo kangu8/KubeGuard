@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Event Console · KubeGuard</title>
+  <style>
+    :root {
+      --ink: #17232d;
+      --muted: #62707a;
+      --line: #dde2e2;
+      --canvas: #f5f6f3;
+      --paper: #ffffff;
+      --rail: #15222d;
+      --accent: #d4623a;
+      --green: #287960;
+      --warning: #a76b17;
+      --danger: #af3d39;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button, a, input, select { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid #91b8d7; outline-offset: 2px; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 224px minmax(0, 1fr); }
+
+    /* A small, purposeful navigation rail; no fake navigation items. */
+    .rail { background: var(--rail); color: #e5edee; padding: 30px 22px; display: flex; flex-direction: column; gap: 48px; }
+    .brand { display: flex; align-items: center; gap: 12px; letter-spacing: -.025em; font-weight: 700; font-size: 19px; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; color: #fff; background: var(--accent); border-radius: 4px; font: 700 13px/1 ui-monospace, "Cascadia Code", monospace; letter-spacing: .02em; }
+    .rail-label, .eyebrow { font: 700 10px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; letter-spacing: .15em; text-transform: uppercase; }
+    .rail-label { color: #8fabb6; margin-bottom: 16px; }
+    .nav-link { display: block; color: #d5e0e3; text-decoration: none; padding: 11px 10px; border-left: 2px solid transparent; }
+    .nav-link:hover { background: #263643; }
+    .nav-link.active { background: #263643; border-left-color: var(--accent); font-weight: 650; }
+    .rail-bottom { margin-top: auto; color: #aac0c7; font-size: 12px; padding-top: 20px; border-top: 1px solid #344450; }
+    .rail-bottom strong { display: block; color: #f6f8f8; font-weight: 600; margin-bottom: 4px; }
+
+    .workspace { min-width: 0; padding: 34px clamp(20px, 4.3vw, 76px) 80px; }
+    .topline { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
+    .eyebrow { color: var(--accent); }
+    .topline h1 { font-size: clamp(28px, 3vw, 40px); font-weight: 650; letter-spacing: -.055em; line-height: 1.12; margin: 8px 0 9px; }
+    .subline { margin: 0; color: var(--muted); max-width: 650px; }
+    .state { display: inline-flex; align-items: center; gap: 9px; padding: 8px 11px; border: 1px solid var(--line); background: #fff; white-space: nowrap; border-radius: 4px; font: 600 12px/1.3 ui-monospace, Consolas, monospace; }
+    .dot { background: #999; width: 7px; height: 7px; border-radius: 50%; }
+    .state[data-state="online"] .dot { background: var(--green); }
+    .state[data-state="error"] .dot { background: var(--danger); }
+
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 34px 0; background: var(--paper); border: 1px solid var(--line); }
+    .metric { padding: 24px 22px; min-width: 0; }
+    .metric + .metric { border-left: 1px solid var(--line); }
+    .metric-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+    .metric-value { display: block; font-size: 30px; font-weight: 650; letter-spacing: -.05em; line-height: 1.15; overflow-wrap: anywhere; }
+    .metric-value.small { font-size: 16px; line-height: 1.5; letter-spacing: -.02em; }
+    .metric-context { color: var(--muted); margin-top: 6px; font-size: 11px; }
+
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 245px; gap: 22px; align-items: start; }
+    .panel { background: var(--paper); border: 1px solid var(--line); min-width: 0; }
+    .panel-head { padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); }
+    .panel h2 { font-size: 16px; letter-spacing: -.03em; margin: 0; font-weight: 700; }
+    .micro { color: var(--muted); font-size: 12px; }
+    .toolbar { padding: 15px 22px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); }
+    .field { border: 1px solid #cbd3d4; background: #fff; color: var(--ink); padding: 10px 12px; min-height: 40px; border-radius: 3px; }
+    .search { min-width: 110px; flex: 1; }
+    .select { width: 145px; }
+    .refresh { border: 1px solid var(--ink); background: var(--ink); color: #fff; padding: 10px 15px; border-radius: 3px; cursor: pointer; min-height: 40px; }
+    .refresh:hover { background: #344553; }
+    .refresh:disabled { opacity: .6; cursor: wait; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 670px; }
+    th { font: 700 10px/1.5 ui-monospace, Consolas, monospace; letter-spacing: .11em; text-transform: uppercase; background: #f8f9f7; color: #63717b; text-align: left; padding: 13px 22px; }
+    td { padding: 17px 22px; border-top: 1px solid #ecf0ef; vertical-align: middle; }
+    tr:hover td { background: #fafbf9; }
+    .event-name { font-weight: 650; font-size: 13px; overflow-wrap: anywhere; }
+    .event-detail { color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 3px; max-width: 360px; overflow-wrap: anywhere; }
+    .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; white-space: nowrap; }
+    .pill { display: inline-block; text-transform: uppercase; font: 700 10px/1 ui-monospace, Consolas, monospace; letter-spacing: .06em; padding: 7px 9px; border-radius: 2px; }
+    .pill.critical { color: #962e34; background: #fce9e8; }
+    .pill.high { color: #9e4829; background: #f9e9df; }
+    .pill.medium { color: #855f13; background: #fbf3de; }
+    .pill.low { color: #2d6d59; background: #e8f3ed; }
+    .empty { padding: 50px 22px; text-align: center; color: var(--muted); }
+    .empty strong { display: block; color: var(--ink); margin-bottom: 6px; }
+    .table-footer { border-top: 1px solid var(--line); padding: 13px 22px; display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; }
+    .breakdown { padding: 22px; }
+    .stacked { display: flex; height: 8px; gap: 2px; margin: 20px 0 25px; background: #e7ebeb; }
+    .stacked span { height: 100%; display: block; width: 0; transition: width .15s ease; }
+    .stacked .critical { background: #b94d4c; }
+    .stacked .high { background: #d27a4a; }
+    .stacked .medium { background: #d4b668; }
+    .stacked .low { background: #4c9c7a; }
+    .key { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; color: var(--muted); font-size: 12px; }
+    .key b { color: var(--ink); }
+    .key-label { display: flex; align-items: center; gap: 9px; }
+    .swatch { width: 7px; height: 7px; display: inline-block; }
+    .hint { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 18px; color: var(--muted); font-size: 12px; }
+    .hint a { color: var(--ink); text-underline-offset: 3px; }
+    @media (max-width: 1120px) { .content-grid { grid-template-columns: 1fr; } .metric { padding: 22px 16px; } }
+    @media (max-width: 780px) {
+      .shell { display: block; }
+      .rail { padding: 16px 20px; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+      .rail-section, .rail-bottom { display: none; }
+      .workspace { padding: 26px 16px 40px; }
+      .topline { align-items: start; flex-direction: column; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric:nth-child(3) { border-left: 0; }
+      .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
+      .toolbar { flex-wrap: wrap; }
+      .search { flex-basis: 100%; }
+      .select { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Project links">
+      <div class="brand"><div class="brand-mark" aria-hidden="true">KG</div><span>KubeGuard</span></div>
+      <div class="rail-section">
+        <div class="rail-label">Workspace</div>
+        <a class="nav-link active" href="/dashboard" aria-current="page">Event console</a>
+        <a class="nav-link" href="/docs">API reference</a>
+        <a class="nav-link" href="/health">Health endpoint</a>
+        <a class="nav-link" href="/ready">Readiness endpoint</a>
+      </div>
+      <div class="rail-bottom">
+        <strong>Development environment</strong>
+        Data is temporary and stored in application memory. Not for production use.
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topline">
+        <div>
+          <div class="eyebrow">Security engineering / Local lab</div>
+          <h1>Event console</h1>
+          <p class="subline">Review events submitted to KubeGuard Security API. This is a test environment, not a live threat-detection system.</p>
+        </div>
+        <div class="state" data-state="loading" id="api-state" role="status" aria-live="polite"><span class="dot"></span><span id="api-state-text">Connecting</span></div>
+      </header>
+
+      <section class="summary" aria-label="Event summary">
+        <div class="metric"><span class="metric-label">Recorded events</span><strong class="metric-value" id="total">—</strong><div class="metric-context">Current process memory</div></div>
+        <div class="metric"><span class="metric-label">High / critical</span><strong class="metric-value" id="urgent">—</strong><div class="metric-context">Combined severity</div></div>
+        <div class="metric"><span class="metric-label">Distinct sources</span><strong class="metric-value" id="sources">—</strong><div class="metric-context">As supplied in events</div></div>
+        <div class="metric"><span class="metric-label">Most recent event</span><strong class="metric-value small" id="latest">—</strong><div class="metric-context" id="latest-context">No timestamp yet</div></div>
+      </section>
+
+      <div class="content-grid">
+        <section class="panel" aria-labelledby="events-heading">
+          <div class="panel-head"><div><h2 id="events-heading">Event journal</h2><div class="micro">Most recent submissions first</div></div><span class="micro" id="result-count">—</span></div>
+          <div class="toolbar">
+            <input class="field search" id="search" type="search" placeholder="Search type, source or description" aria-label="Search events">
+            <select class="field select" id="severity" aria-label="Filter by severity">
+              <option value="all">All severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <button type="button" class="refresh" id="refresh">Refresh</button>
+          </div>
+          <div class="table-scroll"><table><thead><tr><th>Event</th><th>Severity</th><th>Source</th><th>Observed</th></tr></thead><tbody id="event-rows"></tbody></table></div>
+          <div class="empty" id="empty" hidden><strong id="empty-title">No events recorded</strong><span id="empty-detail">Create a test event from the API reference to see it here.</span></div>
+          <div class="table-footer"><span id="last-sync">Not synced yet</span><span>Refreshes every 15s</span></div>
+        </section>
+
+        <aside class="panel" aria-labelledby="severity-heading">
+          <div class="panel-head"><div><h2 id="severity-heading">Severity mix</h2><div class="micro">Based on submitted events</div></div></div>
+          <div class="breakdown">
+            <div class="stacked" id="severity-bar" aria-label="Distribution of events by severity">
+              <span class="critical" id="bar-critical"></span>
+              <span class="high" id="bar-high"></span>
+              <span class="medium" id="bar-medium"></span>
+              <span class="low" id="bar-low"></span>
+            </div>
+            <div class="key"><span class="key-label"><i class="swatch" style="background:#b94d4c"></i>Critical</span><b id="count-critical">0</b></div>
+            <div class="key"><span class="key-label"><i class="swatch" style="background:#d27a4a"></i>High</span><b id="count-high">0</b></div>
+            <div class="key"><span class="key-label"><i class="swatch" style="background:#d4b668"></i>Medium</span><b id="count-medium">0</b></div>
+            <div class="key"><span class="key-label"><i class="swatch" style="background:#4c9c7a"></i>Low</span><b id="count-low">0</b></div>
+            <p class="hint">Events are entered via <a href="/docs">API reference</a>. Values shown here are derived from the API response, not live detection telemetry.</p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <script>
+    (() => {
+      'use strict';
+      const byId = (id) => document.getElementById(id);
+      const levels = ['critical', 'high', 'medium', 'low'];
+      let events = [];
+
+      function setState(kind, message) {
+        byId('api-state').dataset.state = kind;
+        byId('api-state-text').textContent = message;
+      }
+
+      function dateLabel(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Unknown';
+        return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+      }
+
+      function cell(row, className, value) {
+        const td = document.createElement('td');
+        if (className) td.className = className;
+        td.textContent = value;
+        row.append(td);
+        return td;
+      }
+
+      function render() {
+        const count = events.length;
+        const totals = Object.fromEntries(levels.map((severity) => [severity, 0]));
+        for (const event of events) {
+          if (Object.hasOwn(totals, event.severity)) totals[event.severity] += 1;
+        }
+        byId('total').textContent = String(count);
+        byId('urgent').textContent = String(totals.critical + totals.high);
+        byId('sources').textContent = String(new Set(events.map((event) => event.source)).size);
+
+        const sorted = [...events].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        byId('latest').textContent = count ? dateLabel(sorted[0].timestamp) : 'None';
+        byId('latest-context').textContent = count ? 'Time shown in your timezone' : 'No events submitted';
+
+        for (const severity of levels) {
+          byId(`count-${severity}`).textContent = String(totals[severity]);
+          byId(`bar-${severity}`).style.width = count ? `${100 * totals[severity] / count}%` : '0%';
+        }
+
+        const term = byId('search').value.trim().toLowerCase();
+        const severityFilter = byId('severity').value;
+        const visible = sorted.filter((event) =>
+          (severityFilter === 'all' || event.severity === severityFilter) &&
+          [event.event_type, event.source, event.description].some((value) => String(value || '').toLowerCase().includes(term))
+        );
+        byId('result-count').textContent = `${visible.length} / ${count} events`;
+        const tbody = byId('event-rows');
+        tbody.replaceChildren();
+
+        for (const event of visible) {
+          const tr = document.createElement('tr');
+          const eventTd = document.createElement('td');
+          const name = document.createElement('div');
+          name.className = 'event-name';
+          name.textContent = event.event_type;
+          const detail = document.createElement('div');
+          detail.className = 'event-detail';
+          detail.textContent = event.description;
+          eventTd.append(name, detail);
+          tr.append(eventTd);
+          const severityTd = document.createElement('td');
+          const pill = document.createElement('span');
+          pill.className = `pill ${levels.includes(event.severity) ? event.severity : 'low'}`;
+          pill.textContent = event.severity;
+          severityTd.append(pill);
+          tr.append(severityTd);
+          cell(tr, 'mono', event.source);
+          cell(tr, 'mono', dateLabel(event.timestamp));
+          tbody.append(tr);
+        }
+        const empty = visible.length === 0;
+        byId('empty').hidden = !empty;
+        if (empty) {
+          byId('empty-title').textContent = count ? 'No matching events' : 'No events recorded';
+          byId('empty-detail').textContent = count ? 'Try a different search or severity filter.' : 'Create a test event from the API reference to see it here.';
+        }
+      }
+
+      async function refresh() {
+        const button = byId('refresh');
+        button.disabled = true;
+        try {
+          const [healthResponse, eventResponse] = await Promise.all([
+            fetch('/health', { cache: 'no-store' }),
+            fetch('/events', { cache: 'no-store' })
+          ]);
+          if (!healthResponse.ok || !eventResponse.ok) throw new Error('API request failed');
+          const data = await eventResponse.json();
+          if (!Array.isArray(data)) throw new Error('Unexpected events response');
+          events = data;
+          render();
+          setState('online', 'API connected');
+          byId('last-sync').textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+        } catch (error) {
+          setState('error', 'API unavailable');
+          byId('last-sync').textContent = 'Could not refresh — check the API server';
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      byId('search').addEventListener('input', render);
+      byId('severity').addEventListener('change', render);
+      byId('refresh').addEventListener('click', refresh);
+      refresh();
+      setInterval(refresh, 15000);
+    })();
+  </script>
+</body>
+</html>

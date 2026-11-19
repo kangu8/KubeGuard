@@ -1,0 +1,17 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\kangu\KubeGuard\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\kangu\KubeGuard
+plugins: anyio-4.16.0
+collecting ... collected 7 items
+
+tests/test_api.py::test_root PASSED                                      [ 14%]
+tests/test_api.py::test_health PASSED                                    [ 28%]
+tests/test_api.py::test_readiness PASSED                                 [ 42%]
+tests/test_api.py::test_create_security_event PASSED                     [ 57%]
+tests/test_api.py::test_invalid_severity PASSED                          [ 71%]
+tests/test_api.py::test_get_security_events PASSED                       [ 85%]
+tests/test_api.py::test_sqlite_persistence PASSED                        [100%]
+
+============================== 7 passed in 1.07s ==============================
+

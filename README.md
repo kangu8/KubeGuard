@@ -136,3 +136,71 @@ Before publishing evidence, check the contents of screenshots and terminal captu
 - Declarative deployments and repeatable validation
 - DevSecOps tooling integration across build, deploy and runtime stages (upcoming)
 - Clear technical evidence and architecture documentation
+
+## Phase 2 — Security Events API
+
+**Status: Implemented and locally validated**
+
+KubeGuard now includes a Python FastAPI application for collecting and visualizing simulated security events.
+
+### Implemented features
+
+- REST API for security event ingestion and retrieval
+- Pydantic request validation
+- SQLite event persistence
+- Security operations dashboard
+- Automated API tests with pytest
+- Docker image running as a non-root user
+- Kubernetes deployment with readiness and liveness probes
+- PersistentVolumeClaim for SQLite storage
+- Resource limits and container security contexts
+
+### API endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | / | Application information |
+| GET | /health | Health check |
+| GET | /ready | Readiness check |
+| POST | /events | Create a security event |
+| GET | /events | Retrieve security events |
+| GET | /dashboard | Security dashboard |
+
+### Run locally with Docker
+
+```bash
+docker build -t kubeguard-api:0.3.0 .
+docker volume create kubeguard-data
+docker run -d --name kubeguard-api -p 127.0.0.1:8001:8000 --mount type=volume,source=kubeguard-data,target=/app/data kubeguard-api:0.3.0
+```
+
+Dashboard: http://127.0.0.1:8001/dashboard
+
+### Deploy on Kubernetes
+
+The local development cluster uses k3d.
+
+```bash
+k3d image import kubeguard-api:0.3.0 -c kubeguard
+kubectl apply -k k8s/base
+kubectl rollout status deployment/kubeguard-api -n kubeguard
+kubectl port-forward -n kubeguard svc/kubeguard-api 8002:8000
+```
+
+Dashboard: http://127.0.0.1:8002/dashboard
+
+### Automated tests
+
+```bash
+python -m pytest -v
+```
+
+Seven automated tests passed during local validation.
+
+### Current limitations
+
+This is a local security laboratory, not a production SOC platform. Events are simulated and the API does not yet implement authentication or authorization.
+
+SQLite currently supports a single API replica. The Kubernetes local-path volume provides persistence within the local cluster, not highly available storage.
+
+Future phases will introduce CI/CD, vulnerability scanning, GitOps, observability and additional security controls.

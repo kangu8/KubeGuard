@@ -1,0 +1,50 @@
+﻿Name:               kubeguard-api
+Namespace:          kubeguard
+CreationTimestamp:  Thu, 19 Nov 2026 15:41:10 +0100
+Labels:             app=kubeguard-api
+Annotations:        deployment.kubernetes.io/revision: 3
+Selector:           app=kubeguard-api
+Replicas:           1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:       Recreate
+MinReadySeconds:    0
+Pod Template:
+  Labels:       app=kubeguard-api
+  Annotations:  kubectl.kubernetes.io/restartedAt: 2026-11-19T15:52:01+01:00
+  Containers:
+   api:
+    Image:      kubeguard-api:0.3.0
+    Port:       8000/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:     500m
+      memory:  256Mi
+    Requests:
+      cpu:        50m
+      memory:     64Mi
+    Liveness:     http-get http://:8000/health delay=10s timeout=1s period=15s #success=1 #failure=3
+    Readiness:    http-get http://:8000/ready delay=5s timeout=1s period=10s #success=1 #failure=3
+    Environment:  <none>
+    Mounts:
+      /app/data from sqlite-data (rw)
+  Volumes:
+   sqlite-data:
+    Type:          PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:     kubeguard-api-data
+    ReadOnly:      false
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  kubeguard-api-5d9f46fcd4 (0/0 replicas created), kubeguard-api-c675cd5cc (0/0 replicas created)
+NewReplicaSet:   kubeguard-api-6c445df797 (1/1 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  12m    deployment-controller  Scaled up replica set kubeguard-api-5d9f46fcd4 from 0 to 1
+  Normal  ScalingReplicaSet  5m59s  deployment-controller  Scaled down replica set kubeguard-api-5d9f46fcd4 from 1 to 0
+  Normal  ScalingReplicaSet  5m58s  deployment-controller  Scaled up replica set kubeguard-api-c675cd5cc from 0 to 1
+  Normal  ScalingReplicaSet  108s   deployment-controller  Scaled down replica set kubeguard-api-c675cd5cc from 1 to 0
+  Normal  ScalingReplicaSet  107s   deployment-controller  Scaled up replica set kubeguard-api-6c445df797 from 0 to 1
