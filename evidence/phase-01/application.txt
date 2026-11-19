@@ -1,0 +1,9 @@
+﻿NAME                                 READY   STATUS    RESTARTS   AGE     IP          NODE                     NOMINATED NODE   READINESS GATES
+pod/kubeguard-web-59dc47f766-7tz2n   1/1     Running   0          3m34s   10.42.0.5   k3d-kubeguard-agent-0    <none>           <none>
+pod/kubeguard-web-59dc47f766-lqw4z   1/1     Running   0          3m34s   10.42.1.7   k3d-kubeguard-server-0   <none>           <none>
+
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES                SELECTOR
+deployment.apps/kubeguard-web   2/2     2            2           3m34s   nginx        nginx:stable-alpine   app=kubeguard-web
+
+NAME                    TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+service/kubeguard-web   ClusterIP   10.43.47.12   <none>        80/TCP    3m34s   app=kubeguard-web

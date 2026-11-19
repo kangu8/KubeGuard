@@ -1,0 +1,25 @@
+﻿# Credentials and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.kube/
+kubeconfig
+*.kubeconfig
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Development
+.vscode/
+.idea/
+*.log
+
+# Operating system
+.DS_Store
+Thumbs.db

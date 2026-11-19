@@ -1,0 +1,9 @@
+﻿NAME                                      READY   STATUS      RESTARTS   AGE
+coredns-8db54c48d-2vnpn                   1/1     Running     0          26m
+helm-install-traefik-crd-k7rds            0/1     Completed   0          26m
+helm-install-traefik-tfhbg                0/1     Completed   1          26m
+local-path-provisioner-5d9d9885bc-m6qgs   1/1     Running     0          26m
+metrics-server-786d997795-8qgxz           1/1     Running     0          26m
+svclb-traefik-d27ab2a0-bnc26              2/2     Running     0          26m
+svclb-traefik-d27ab2a0-xlz26              2/2     Running     0          26m
+traefik-9bcdbbd9-kfhq2                    1/1     Running     0          26m

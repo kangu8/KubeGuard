@@ -1,0 +1,3 @@
+﻿NAME                     STATUS   ROLES           AGE   VERSION        INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION                     CONTAINER-RUNTIME
+k3d-kubeguard-agent-0    Ready    <none>          26m   v1.35.5+k3s1   172.18.0.4    <none>        K3s v1.35.5+k3s1   6.6.87.2-microsoft-standard-WSL2   containerd://2.2.3-k3s1
+k3d-kubeguard-server-0   Ready    control-plane   26m   v1.35.5+k3s1   172.18.0.3    <none>        K3s v1.35.5+k3s1   6.6.87.2-microsoft-standard-WSL2   containerd://2.2.3-k3s1
