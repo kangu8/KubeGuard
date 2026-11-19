@@ -47,8 +47,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build hardened Docker image
-        run: docker build -f Dockerfile.alpine -t kubeguard-api:ci .
+- name: Build multistage Docker image
+  run: docker build -t kubeguard-api:ci .
 
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
