@@ -37,7 +37,7 @@ flowchart TB
 | Cluster operations | kubectl | Implemented |
 | Sample workload | NGINX (2 replicas) | Implemented |
 | Kubernetes resources | Namespace, Deployment, ClusterIP Service, readiness probe, resource requests/limits | Implemented |
-| CI/CD and image scanning | GitHub Actions, Trivy | Planned |
+| CI/CD and image scanning | GitHub Actions, Trivy | Implemented |
 | GitOps and packaging | Argo CD, Helm | Planned |
 | Kubernetes policy | RBAC, NetworkPolicy, Kyverno | Planned |
 | Observability | Prometheus, Grafana | Planned |
@@ -203,4 +203,85 @@ This is a local security laboratory, not a production SOC platform. Events are s
 
 SQLite currently supports a single API replica. The Kubernetes local-path volume provides persistence within the local cluster, not highly available storage.
 
-Future phases will introduce CI/CD, vulnerability scanning, GitOps, observability and additional security controls.
+Future phases will focus on deploying the hardened image to Kubernetes, GitOps, observability and additional security controls.
+
+## Phase 3 — DevSecOps CI and Container Hardening
+
+**Status: Completed and validated — November 19, 2026**
+
+This phase introduces automated testing, container vulnerability scanning, and security-focused Docker image optimization.
+
+### Continuous Integration — GitHub Actions
+
+The CI pipeline runs automatically on pushes and pull requests targeting the `main` branch.
+
+It consists of two sequential jobs:
+
+1. **Python API Tests**
+   - Sets up Python 3.14.
+   - Installs development dependencies.
+   - Executes seven automated pytest tests.
+
+2. **Docker Build & Security Scan**
+   - Builds the application using a multi-stage Dockerfile.
+   - Scans the resulting image with Trivy.
+   - Checks operating-system and Python dependencies.
+   - Fails the CI job when HIGH or CRITICAL vulnerabilities are detected (`exit-code: 1`).
+
+Workflow: [KubeGuard CI](.github/workflows/ci.yml)
+
+### Docker Image Hardening
+
+The original Debian-based image was compared against Alpine-based alternatives.
+
+Security improvements include:
+
+- Alpine Linux as the container base.
+- Multi-stage Docker build.
+- Isolated Python virtual environment.
+- Removal of pip from the final runtime filesystem.
+- Non-root execution using UID/GID 10001.
+- Reduced runtime dependencies.
+- Persistent SQLite storage through a mounted volume.
+
+### Vulnerability Assessment Results
+
+The following results were obtained using Trivy during local validation on November 19, 2026.
+
+| Docker Image | Disk Usage | HIGH | CRITICAL |
+|---|---:|---:|---:|
+| Debian Slim (original) | 204 MB | 53 | 0 |
+| Alpine | 100 MB | 5 | 0 |
+| Alpine Hardened | 100 MB | 0 | 0 |
+| Alpine Multistage (final) | 100 MB | 0 | 0 |
+
+**Results:**
+- Approximately 51% reduction in Docker image disk usage.
+- From 53 HIGH findings to 0 detected HIGH findings.
+- No HIGH or CRITICAL findings in the final image scan.
+- Successful validation of FastAPI, SQLite, and the application dashboard.
+- Successful GitHub Actions CI execution with vulnerability blocking enabled.
+
+### Security Considerations
+
+These results reflect known vulnerabilities identified by Trivy at the time of scanning. They do not guarantee that the image is free from all security risks.
+
+The removal of pip from the runtime filesystem does not necessarily remove its contents from underlying Docker image layers.
+
+The project remains a local security laboratory and is not intended as a production-ready security monitoring platform.
+
+### Evidence
+
+- [Original Debian vulnerability report](evidence/phase-03/debian-trivy.json)
+- [Hardened Alpine vulnerability report](evidence/phase-03/alpine-hardened-trivy.json)
+- [GitHub Actions executions](https://github.com/kangu8/KubeGuard/actions)
+
+### Phase 3 Validation
+
+- [x] Automated Python tests
+- [x] GitHub Actions CI
+- [x] Docker multi-stage build
+- [x] Non-root container execution
+- [x] Trivy image vulnerability scanning
+- [x] HIGH/CRITICAL vulnerability gate
+- [x] Functional validation of the hardened image
