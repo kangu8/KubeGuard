@@ -1,0 +1,22 @@
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubeguard-api-ingress
+  namespace: kubeguard
+spec:
+  podSelector:
+    matchLabels:
+      app: kubeguard-api
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              access: kubeguard-api
+      ports:
+        - protocol: TCP
+          port: 8000
