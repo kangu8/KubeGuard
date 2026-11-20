@@ -2,8 +2,6 @@
 
 > A hands-on Kubernetes lab evolving into a secure, automated and observable DevSecOps platform.
 
-**Project status:** Phase 1 completed — local Kubernetes cluster and sample workload validated. Security and CI/CD integrations described below are **planned**, not yet implemented.
-
 ## Overview
 
 KubeGuard is a portfolio project focused on learning and demonstrating the operational practices required to deploy, manage, monitor and secure containerized applications in Kubernetes.
@@ -200,6 +198,15 @@ python -m pytest -v
 ```
 
 Seven automated tests passed during local validation.
+
+
+### Security Events Dashboard
+
+Interactive dashboard for reviewing simulated
+security events, severity levels and event sources.
+
+![KubeGuard Security Dashboard](evidence/phase-02/dashboard-final.png)
+
 
 ### Current limitations
 
