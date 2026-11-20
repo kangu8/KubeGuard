@@ -297,89 +297,6 @@ The project remains a local security laboratory and is not intended as a product
 
 Deploy the hardened Alpine Multistage container image to the existing Kubernetes cluster while preserving the SQLite database, security controls and persistent storage.
 
-
-## Final architecture — KubeGuard
-
-```mermaid
-flowchart TB
-    %% Host infrastructure
-    W["Windows 11 host"] --> D["Docker Desktop / WSL2"]
-    D --> K["k3d cluster: kubeguard"]
-
-    %% Kubernetes cluster
-    subgraph K8S["Kubernetes Cluster — K3s"]
-        direction TB
-
-        S["K3s Server Node<br/>Control Plane"]
-        A["K3s Agent Node<br/>Worker"]
-
-        subgraph NS1["Namespace: kubeguard"]
-            direction TB
-
-            WEB["NGINX Deployment<br/>2 replicas"]
-            WSVC["ClusterIP Service<br/>kubeguard-web"]
-            WSVC --> WEB
-
-            ASVC["ClusterIP Service<br/>kubeguard-api:8000"]
-            API["FastAPI Deployment<br/>kubeguard-api:0.3.0-final"]
-            ASVC --> API
-
-            PVC["PersistentVolumeClaim<br/>1 GiB"]
-            DB[("SQLite Database<br/>kubeguard.db")]
-            API --> PVC --> DB
-
-            NP["NetworkPolicy<br/>kubeguard-api-ingress"]
-            NP -.->|"Controls ingress"| API
-
-            AUTH["Authorized Client Pod<br/>access=kubeguard-api"]
-            AUTH -->|"Allowed"| ASVC
-
-            WEB -.->|"Denied"| ASVC
-        end
-
-        subgraph NS2["Namespace: kubeguard-attack"]
-            ATK["Attacker Pod"]
-        end
-
-        ATK -.->|"Denied"| ASVC
-    end
-
-    K --> K8S
-
-    %% Local access
-    B["Local Browser"] --> PF["kubectl port-forward<br/>8010:8000"]
-    PF --> ASVC
-    DASH["Security Event Dashboard<br/>/dashboard"]
-    API --- DASH
-
-    %% Security hardening
-    SEC["Container Hardening<br/>Non-root user<br/>Read-only root filesystem<br/>Seccomp RuntimeDefault<br/>Dropped capabilities"]
-    SEC -.-> API
-
-    %% CI / DevSecOps pipeline
-    subgraph CI["GitHub Actions — DevSecOps CI"]
-        direction LR
-        GH["GitHub Repository"] --> TEST["pytest<br/>Automated Tests"]
-        TEST --> BUILD["Docker<br/>Multistage Build"]
-        BUILD --> TRIVY["Trivy<br/>Vulnerability Scan"]
-    end
-
-    TRIVY -.->|"Validated image<br/>Manual deployment"| API
-
-    %% Traffic colors
-    linkStyle 8 stroke:#22c55e,stroke-width:2px
-    linkStyle 9 stroke:#ef4444,stroke-width:2px
-    linkStyle 10 stroke:#ef4444,stroke-width:2px
-
-    style NS1 fill:#122438,stroke:#3b82f6,color:#ffffff
-    style NS2 fill:#351b24,stroke:#ef4444,color:#ffffff
-    style CI fill:#182b22,stroke:#22c55e,color:#ffffff
-    style NP fill:#43351c,stroke:#eab308,color:#ffffff
-    style API fill:#193b4a,stroke:#38bdf8,color:#ffffff
-    style DB fill:#193b4a,stroke:#38bdf8,color:#ffffff
-```
-
-
 ### Deployment upgrade
 
 | Component | Before | After |
@@ -444,6 +361,74 @@ The upgraded Deployment retains:
 - [Kubernetes resources after upgrade](evidence/phase-04/kubernetes-after-upgrade.txt)
 - [Deployed container image](evidence/phase-04/deployed-image.txt)
 - [SQLite persistence verification](evidence/phase-04/sqlite-persistence.txt)
+
+## Final architecture — KubeGuard
+
+The diagram below represents the completed local Kubernetes and DevSecOps laboratory. GitHub Actions validates the code and container image; deployment to k3d is performed manually.
+
+```mermaid
+flowchart TB
+    subgraph HOST["LOCAL ENVIRONMENT"]
+        direction LR
+        WIN["Windows 11"] --> DOCKER["Docker Desktop / WSL2"]
+        DOCKER --> K3D["k3d cluster: kubeguard"]
+        BROWSER["Browser: localhost:8010/dashboard"]
+    end
+
+    subgraph K8S["KUBERNETES / K3s - 2 nodes"]
+        direction TB
+        NODES["K3s server: control plane<br/>K3s agent: worker"]
+
+        subgraph APP["Namespace: kubeguard"]
+            direction TB
+            WEB_SVC["ClusterIP: kubeguard-web"] --> WEB["NGINX Deployment<br/>2 Pods"]
+            API_SVC["ClusterIP: kubeguard-api<br/>TCP 8000"] --> API["FastAPI + security dashboard<br/>kubeguard-api:0.3.0-final"]
+            API --> PVC[("PVC 1 GiB<br/>SQLite: kubeguard.db")]
+
+            POLICY["NetworkPolicy<br/>kubeguard-api-ingress"] -.->|"Enforces API Pod ingress"| API
+            HARDEN["Container hardening<br/>non-root / read-only root FS<br/>seccomp / drop ALL"] -.-> API
+            CLIENT["authorized-client<br/>access=kubeguard-api"] -->|"ALLOWED"| API_SVC
+            WEB -.->|"DENIED in test"| API_SVC
+        end
+
+        subgraph ATTACK["Namespace: kubeguard-attack"]
+            ATTACKER["attacker Pod / curl"]
+        end
+
+        ATTACKER -.->|"DENIED"| API_SVC
+    end
+
+    K3D --> NODES
+    BROWSER -->|"kubectl port-forward 8010:8000"| API_SVC
+
+    subgraph CI["GITHUB ACTIONS - SECURITY CI"]
+        direction LR
+        REPO["GitHub repository"] --> TESTS["pytest"]
+        TESTS --> BUILD["Docker multistage build"]
+        BUILD --> TRIVY["Trivy HIGH / CRITICAL gate"]
+    end
+
+    MANUAL["Local image build + k3d image import<br/>Manual kubectl apply"] -.->|"Deployment (not CI/CD)"| API
+
+    classDef infrastructure fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e,stroke-width:1.5px
+    classDef application fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px
+    classDef storage fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:1.5px
+    classDef security fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:1.5px
+    classDef allow fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1.5px
+    classDef deny fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:1.5px
+    classDef pipeline fill:#f3e8ff,stroke:#9333ea,color:#581c87,stroke-width:1.5px
+
+    class WIN,DOCKER,K3D,BROWSER,NODES infrastructure
+    class WEB_SVC,WEB,API_SVC,API application
+    class PVC storage
+    class POLICY,HARDEN,MANUAL security
+    class CLIENT allow
+    class ATTACKER deny
+    class REPO,TESTS,BUILD,TRIVY pipeline
+```
+
+**Traffic legend:** solid arrow = communication/dependency; dashed arrow marked *DENIED* = attempted, blocked connection. The network policy selects the FastAPI Pods, not the ClusterIP Service. The NGINX denial is an intentional security test, not an application dependency.
+
 
 ### Limitations and next steps
 
