@@ -297,6 +297,89 @@ The project remains a local security laboratory and is not intended as a product
 
 Deploy the hardened Alpine Multistage container image to the existing Kubernetes cluster while preserving the SQLite database, security controls and persistent storage.
 
+
+## Final architecture — KubeGuard
+
+```mermaid
+flowchart TB
+    %% Host infrastructure
+    W["Windows 11 host"] --> D["Docker Desktop / WSL2"]
+    D --> K["k3d cluster: kubeguard"]
+
+    %% Kubernetes cluster
+    subgraph K8S["Kubernetes Cluster — K3s"]
+        direction TB
+
+        S["K3s Server Node<br/>Control Plane"]
+        A["K3s Agent Node<br/>Worker"]
+
+        subgraph NS1["Namespace: kubeguard"]
+            direction TB
+
+            WEB["NGINX Deployment<br/>2 replicas"]
+            WSVC["ClusterIP Service<br/>kubeguard-web"]
+            WSVC --> WEB
+
+            ASVC["ClusterIP Service<br/>kubeguard-api:8000"]
+            API["FastAPI Deployment<br/>kubeguard-api:0.3.0-final"]
+            ASVC --> API
+
+            PVC["PersistentVolumeClaim<br/>1 GiB"]
+            DB[("SQLite Database<br/>kubeguard.db")]
+            API --> PVC --> DB
+
+            NP["NetworkPolicy<br/>kubeguard-api-ingress"]
+            NP -.->|"Controls ingress"| API
+
+            AUTH["Authorized Client Pod<br/>access=kubeguard-api"]
+            AUTH -->|"Allowed"| ASVC
+
+            WEB -.->|"Denied"| ASVC
+        end
+
+        subgraph NS2["Namespace: kubeguard-attack"]
+            ATK["Attacker Pod"]
+        end
+
+        ATK -.->|"Denied"| ASVC
+    end
+
+    K --> K8S
+
+    %% Local access
+    B["Local Browser"] --> PF["kubectl port-forward<br/>8010:8000"]
+    PF --> ASVC
+    DASH["Security Event Dashboard<br/>/dashboard"]
+    API --- DASH
+
+    %% Security hardening
+    SEC["Container Hardening<br/>Non-root user<br/>Read-only root filesystem<br/>Seccomp RuntimeDefault<br/>Dropped capabilities"]
+    SEC -.-> API
+
+    %% CI / DevSecOps pipeline
+    subgraph CI["GitHub Actions — DevSecOps CI"]
+        direction LR
+        GH["GitHub Repository"] --> TEST["pytest<br/>Automated Tests"]
+        TEST --> BUILD["Docker<br/>Multistage Build"]
+        BUILD --> TRIVY["Trivy<br/>Vulnerability Scan"]
+    end
+
+    TRIVY -.->|"Validated image<br/>Manual deployment"| API
+
+    %% Traffic colors
+    linkStyle 8 stroke:#22c55e,stroke-width:2px
+    linkStyle 9 stroke:#ef4444,stroke-width:2px
+    linkStyle 10 stroke:#ef4444,stroke-width:2px
+
+    style NS1 fill:#122438,stroke:#3b82f6,color:#ffffff
+    style NS2 fill:#351b24,stroke:#ef4444,color:#ffffff
+    style CI fill:#182b22,stroke:#22c55e,color:#ffffff
+    style NP fill:#43351c,stroke:#eab308,color:#ffffff
+    style API fill:#193b4a,stroke:#38bdf8,color:#ffffff
+    style DB fill:#193b4a,stroke:#38bdf8,color:#ffffff
+```
+
+
 ### Deployment upgrade
 
 | Component | Before | After |
