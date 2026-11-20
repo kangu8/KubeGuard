@@ -297,6 +297,16 @@ The project remains a local security laboratory and is not intended as a product
 - [x] Functional validation of the hardened image
 
 
+### CI Pipeline — Successful Execution
+
+The GitHub Actions pipeline validates the FastAPI
+application through automated pytest tests, builds
+the hardened Docker image and performs vulnerability
+scanning with Trivy.
+
+<img width="1090" height="339" alt="workflows" src="https://github.com/user-attachments/assets/6bc15424-b087-4c6f-96ea-6d1323648318" />
+
+
 ## Phase 4 — Controlled Kubernetes Image Upgrade and SQLite Persistence
 
 ### Objective
