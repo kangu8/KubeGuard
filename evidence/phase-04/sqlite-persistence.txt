@@ -1,0 +1,6 @@
+﻿Integrity: ok
+Total events: 4
+91a690e0-33a6-4773-8522-c902ad342090 | kubernetes_security_test | critical
+098aadbe-a6ce-428c-95cf-c6b1a4f17d71 | pvc_persistence_test | high
+6f96a06c-3f54-419d-8af8-ebb04addf66b | pre_upgrade_pvc_check | medium
+d05292a1-dc02-445c-8bf6-2ac3c4c63d11 | post_upgrade_validation | low

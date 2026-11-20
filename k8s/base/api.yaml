@@ -42,7 +42,7 @@ spec:
 
       containers:
         - name: api
-          image: kubeguard-api:0.3.0
+          image: kubeguard-api:0.3.0-final
           imagePullPolicy: Never
 
           ports:

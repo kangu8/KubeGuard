@@ -1,0 +1,11 @@
+﻿NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/kubeguard-api   1/1     1            1           9h
+deployment.apps/kubeguard-web   2/2     2            2           11h
+
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/kubeguard-api-64fcbf6676-zjjg4   1/1     Running   0          5m33s
+pod/kubeguard-web-59dc47f766-7tz2n   1/1     Running   0          11h
+pod/kubeguard-web-59dc47f766-lqw4z   1/1     Running   0          11h
+
+NAME                                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/kubeguard-api-data   Bound    pvc-90a44572-fe37-4908-86b1-2996359109b3   1Gi        RWO            local-path     <unset>                 9h

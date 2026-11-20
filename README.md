@@ -100,9 +100,10 @@ Open **http://localhost:8080** and confirm that the NGINX welcome page appears. 
 ## Roadmap
 
 - [x] **Phase 1 — Cluster foundation:** provision Kubernetes, deploy NGINX, capture evidence
-- [ ] **Phase 2 — Custom application:** develop and containerize a small Python API; Kubernetes manifests and health endpoints
-- [ ] **Phase 3 — CI pipeline:** automated tests, image builds, Trivy vulnerability scanning
-- [ ] **Phase 4 — GitOps:** Helm charts and Argo CD deployment workflow
+- [x] **Phase 2 — Custom application:** develop and containerize a small Python API; Kubernetes manifests and health endpoints
+- [x] **Phase 3 — CI pipeline:** automated tests, image builds, Trivy vulnerability scanning
+- [x] **Phase 4 — Controlled Kubernetes upgrade:** deploy the hardened Alpine image while preserving SQLite data and the PVC
+- [ ] **Planned — GitOps:** Helm charts and Argo CD deployment workflow
 - [ ] **Phase 5 — Security controls:** least-privilege RBAC, NetworkPolicies, Kyverno policies
 - [ ] **Phase 6 — Observability:** Prometheus metrics and Grafana dashboards
 - [ ] **Phase 7 — Threat detection:** controlled Falco detections and documented investigation scenarios
@@ -110,19 +111,22 @@ Open **http://localhost:8080** and confirm that the NGINX welcome page appears. 
 
 ## Repository structure
 
-```text
-KubeGuard/
-├── k8s/
-│   └── base/
-│       └── web.yaml
-├── evidence/
-│   └── phase-01/
-│       ├── nodes.txt
-│       ├── system-pods.txt
-│       ├── application.txt
-│       └── nginx-localhost.png
-└── README.md
-```
+| Directory or file | Description |
+|---|---|
+| .github/workflows/ | GitHub Actions CI pipeline |
+| app/ | FastAPI application and SQLite persistence |
+| app/static/ | Security events dashboard |
+| k8s/base/ | Kubernetes manifests and Kustomize |
+| tests/ | Automated API tests |
+| evidence/phase-01/ | Cluster foundation evidence |
+| evidence/phase-02/ | API deployment evidence |
+| evidence/phase-03/ | Container security scan evidence |
+| evidence/phase-04/ | Kubernetes upgrade and SQLite persistence evidence |
+| Dockerfile | Hardened multistage container build |
+| Dockerfile.debian, Dockerfile.alpine, Dockerfile.multistage | Historical build variants |
+| requirements.txt, requirements-dev.txt | Python dependencies |
+
+Local SQLite databases, backups and virtual environments are excluded from Git.
 
 ## Security and scope notes
 
@@ -285,3 +289,85 @@ The project remains a local security laboratory and is not intended as a product
 - [x] Trivy image vulnerability scanning
 - [x] HIGH/CRITICAL vulnerability gate
 - [x] Functional validation of the hardened image
+
+
+## Phase 4 — Controlled Kubernetes Image Upgrade and SQLite Persistence
+
+### Objective
+
+Deploy the hardened Alpine Multistage container image to the existing Kubernetes cluster while preserving the SQLite database, security controls and persistent storage.
+
+### Deployment upgrade
+
+| Component | Before | After |
+|---|---|---|
+| Container image | kubeguard-api:0.3.0 | kubeguard-api:0.3.0-final |
+| Base image | Debian Slim | Alpine Multistage |
+| Deployment replicas | 1 | 1 |
+| Update strategy | Recreate | Recreate |
+| Persistent storage | 1Gi PVC | Same PVC |
+| SQLite events | 3 | 4 |
+
+The new image was imported into both k3d nodes before updating the Kubernetes Deployment.
+
+The image reference was updated in `k8s/base/api.yaml`, preserving the existing Service, PVC, resource limits, security contexts and health probes.
+
+The manifests were validated using Kubernetes server-side dry-run before deployment.
+
+### SQLite backup and recovery preparation
+
+Before performing the upgrade:
+
+1. Created a consistent SQLite backup using Python's `sqlite3.Connection.backup()` API.
+2. Copied the backup outside the Kubernetes cluster to the Windows host.
+3. Verified database integrity with `PRAGMA integrity_check`.
+4. Confirmed that all three original security events were present.
+
+The local backup is stored in `data/backups/kubeguard-pre-upgrade.db` and excluded from Git.
+
+### Persistence validation
+
+After deploying the hardened image:
+
+- The API successfully started with the existing persistent volume.
+- SQLite integrity verification returned `ok`.
+- All three original event UUIDs were preserved.
+- A new synthetic event was successfully written to SQLite.
+- The final database contained four events.
+- The `/health`, `/ready` and `/events` endpoints responded successfully.
+- The security dashboard displayed the new event.
+
+The post-upgrade validation event has the UUID:
+
+`d05292a1-dc02-445c-8bf6-2ac3c4c63d11`
+
+This demonstrates successful application replacement without losing the original SQLite records.
+
+### Kubernetes security controls
+
+The upgraded Deployment retains:
+
+- Non-root execution using UID/GID 10001.
+- Read-only container root filesystem.
+- Disabled privilege escalation.
+- Dropped Linux capabilities.
+- RuntimeDefault seccomp profile.
+- CPU and memory requests and limits.
+- Readiness and liveness probes.
+- Persistent volume mounted at `/app/data`.
+
+### Evidence
+
+- [Kubernetes resources after upgrade](evidence/phase-04/kubernetes-after-upgrade.txt)
+- [Deployed container image](evidence/phase-04/deployed-image.txt)
+- [SQLite persistence verification](evidence/phase-04/sqlite-persistence.txt)
+
+### Limitations and next steps
+
+The current deployment uses a single API replica and a local-path ReadWriteOnce persistent volume.
+
+The Recreate strategy introduces temporary downtime during container replacement.
+
+SQLite persistence was validated successfully, but the current architecture does not provide high availability or automated disaster recovery.
+
+GitOps using Helm and Argo CD remains planned future work.
