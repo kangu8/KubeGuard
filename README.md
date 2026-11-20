@@ -446,12 +446,60 @@ flowchart TB
 **Traffic legend:** solid arrow = communication/dependency; dashed arrow marked *DENIED* = attempted, blocked connection. The network policy selects the FastAPI Pods, not the ClusterIP Service. The NGINX denial is an intentional security test, not an application dependency.
 
 
-### Limitations and next steps
+---
 
-The current deployment uses a single API replica and a local-path ReadWriteOnce persistent volume.
+## Red Team vs Blue Team — Kubernetes Security Lab
 
-The Recreate strategy introduces temporary downtime during container replacement.
+This practical security scenario demonstrates how
+Kubernetes NetworkPolicies can prevent unauthorized
+access to internal services through network isolation
+and least-privilege controls.
 
-SQLite persistence was validated successfully, but the current architecture does not provide high availability or automated disaster recovery.
+### Attack Scenario
 
-GitOps using Helm and Argo CD remains planned future work.
+An attacker-controlled Pod was deployed in a
+separate namespace (`kubeguard-attack`).
+
+Initially, the attacker successfully accessed the
+FastAPI security events endpoint, retrieving four
+simulated events without authentication.
+
+### Defense Implementation
+
+Two security configurations were tested:
+
+1. Namespace-based network isolation.
+2. Least-privilege NetworkPolicy using trusted Pod labels.
+
+The final policy restricts access to the FastAPI
+service while allowing explicitly selected clients.
+
+### Security Validation
+
+| Test | Result |
+|---|---|
+| Initial unauthorized API access | HTTP 200 OK |
+| External attacker after mitigation | Blocked |
+| Unauthorized NGINX Pod | Blocked |
+| Authorized client | HTTP 200 OK |
+| FastAPI health check | Healthy |
+
+### Unauthorized Access Blocked
+
+![NetworkPolicy Attack Blocked](evidence/scenario-01-network-isolation/attacker-blocked.png)
+
+### Authorized Access
+
+![Authorized Client](evidence/scenario-01-network-isolation/authorized-access.png)
+
+### Full Laboratory Documentation
+
+[View the complete Red Team vs Blue Team laboratory](k8s/scenarios/README.md)
+
+**Technologies:** Kubernetes, K3s, k3d, Docker,
+NetworkPolicies, FastAPI, Linux and YAML.
+
+**Security note:** NetworkPolicies enforce network
+segmentation but do not replace application authentication
+or Kubernetes RBAC.
+
