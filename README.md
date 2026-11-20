@@ -205,8 +205,7 @@ Seven automated tests passed during local validation.
 Interactive dashboard for reviewing simulated
 security events, severity levels and event sources.
 
-![KubeGuard Security Dashboard](evidence/phase-02/dashboard-final.png)
-
+<img width="1893" height="888" alt="Captura de pantalla 2026-11-20 135609" src="https://github.com/user-attachments/assets/4b86aff6-0ef6-49aa-af40-6fa4832a82a9" />
 
 ### Current limitations
 
