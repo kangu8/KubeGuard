@@ -8,7 +8,7 @@ KubeGuard is a portfolio project focused on learning and demonstrating the opera
 
 The project begins with a reproducible local K3s cluster managed through k3d and will evolve through infrastructure-as-code, automated delivery, GitOps, observability and runtime security.
 
-## Current architecture
+## Phase 1 — Initial Architecture
 
 ```mermaid
 flowchart TB
@@ -37,7 +37,8 @@ flowchart TB
 | Kubernetes resources | Namespace, Deployment, ClusterIP Service, readiness probe, resource requests/limits | Implemented |
 | CI/CD and image scanning | GitHub Actions, Trivy | Implemented |
 | GitOps and packaging | Argo CD, Helm | Planned |
-| Kubernetes policy | RBAC, NetworkPolicy, Kyverno | Planned |
+| Network security | Kubernetes NetworkPolicies | Implemented |
+| Advanced security | RBAC, Kyverno | Planned |
 | Observability | Prometheus, Grafana | Planned |
 | Runtime threat detection | Falco | Planned |
 
@@ -115,11 +116,13 @@ Open **http://localhost:8080** and confirm that the NGINX welcome page appears. 
 | app/ | FastAPI application and SQLite persistence |
 | app/static/ | Security events dashboard |
 | k8s/base/ | Kubernetes manifests and Kustomize |
+| k8s/scenarios/ | Red Team vs Blue Team laboratory and NetworkPolicies |
 | tests/ | Automated API tests |
 | evidence/phase-01/ | Cluster foundation evidence |
 | evidence/phase-02/ | API deployment evidence |
 | evidence/phase-03/ | Container security scan evidence |
 | evidence/phase-04/ | Kubernetes upgrade and SQLite persistence evidence |
+| evidence/scenario-01-network-isolation/ | Attack and defense validation screenshots |
 | Dockerfile | Hardened multistage container build |
 | Dockerfile.debian, Dockerfile.alpine, Dockerfile.multistage | Historical build variants |
 | requirements.txt, requirements-dev.txt | Python dependencies |
@@ -128,7 +131,11 @@ Local SQLite databases, backups and virtual environments are excluded from Git.
 
 ## Security and scope notes
 
-The current NGINX deployment is deliberately a **baseline lab workload**, not a production-hardened deployment. Hardening controls, non-root workload configuration, admission policies, network restrictions, authenticated delivery and image pinning will be introduced and verified in later phases.
+KubeGuard is a local DevSecOps security laboratory, **not** a production-ready security monitoring platform. The NGINX deployment remains a baseline lab workload.
+
+Implemented security controls include FastAPI container hardening (non-root execution, read-only root filesystem, seccomp and dropped Linux capabilities), Trivy image vulnerability scanning and Kubernetes NetworkPolicies validated through a Red Team vs Blue Team scenario.
+
+Application-level authentication, comprehensive Kubernetes RBAC, admission policies, GitOps and runtime threat detection remain outside the current implementation.
 
 Before publishing evidence, check the contents of screenshots and terminal captures to avoid exposing tokens, kubeconfig credentials or other sensitive information.
 
@@ -502,4 +509,3 @@ NetworkPolicies, FastAPI, Linux and YAML.
 **Security note:** NetworkPolicies enforce network
 segmentation but do not replace application authentication
 or Kubernetes RBAC.
-
