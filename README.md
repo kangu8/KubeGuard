@@ -1,6 +1,6 @@
 # KubeGuard — Kubernetes DevSecOps Platform
 
-> A hands-on Kubernetes lab evolving into a secure, automated and observable DevSecOps platform.
+> KubeGuard is a hands-on Kubernetes DevSecOps security laboratory featuring a containerized FastAPI application, persistent event storage, automated security scanning, hardened containers and practical network isolation exercises.
 
 ## Overview
 
