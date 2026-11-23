@@ -1,12 +1,23 @@
 # KubeGuard — Kubernetes DevSecOps Platform
 
-> KubeGuard is a hands-on Kubernetes DevSecOps security laboratory featuring a containerized FastAPI application, persistent event storage, automated security scanning, hardened containers and practical network isolation exercises.
+> A hands-on Kubernetes DevSecOps security lab with hardened containers, automated security checks and a practical Red Team vs Blue Team network-isolation scenario.
 
 ## Overview
 
-KubeGuard is a portfolio project focused on learning and demonstrating the operational practices required to deploy, manage, monitor and secure containerized applications in Kubernetes.
+KubeGuard is a portfolio project demonstrating how to deploy, secure and validate containerized applications in a local Kubernetes environment.
 
-The project begins with a reproducible local K3s cluster managed through k3d and will evolve through infrastructure-as-code, automated delivery, GitOps, observability and runtime security.
+The implemented lab combines a k3d/K3s cluster, a FastAPI security-events application with persistent SQLite storage, GitHub Actions CI, Trivy vulnerability scanning and Kubernetes NetworkPolicies. GitOps, observability and runtime threat detection remain planned rather than implemented.
+
+## Contents
+
+- [Overview](#overview)
+- [Technology stack](#technology-stack)
+- [Phase 1 — Initial Architecture](#phase-1--initial-architecture)
+- [Phase 2 — Security Events API](#phase-2--security-events-api)
+- [Phase 3 — DevSecOps CI and Container Hardening](#phase-3--devsecops-ci-and-container-hardening)
+- [Phase 4 — Controlled Kubernetes Image Upgrade and SQLite Persistence](#phase-4--controlled-kubernetes-image-upgrade-and-sqlite-persistence)
+- [Final architecture](#final-architecture--kubeguard)
+- [Red Team vs Blue Team security lab](#red-team-vs-blue-team--kubernetes-security-lab)
 
 ## Phase 1 — Initial Architecture
 
@@ -481,6 +492,46 @@ Two security configurations were tested:
 The final policy restricts access to the FastAPI
 service while allowing explicitly selected clients.
 
+### Reproduce the Network Isolation Scenario
+
+Run the following commands from the repository root. Prerequisites: Docker Desktop,
+`kubectl`, `k3d`, and a working local `kubeguard` cluster. First ensure the
+KubeGuard API is deployed; its image must be built and imported into the local
+k3d cluster because the Kubernetes manifest uses a local image.
+
+```powershell
+docker build -t kubeguard-api:0.3.0-final .
+k3d image import kubeguard-api:0.3.0-final -c kubeguard
+kubectl apply -k k8s/base
+kubectl rollout status deployment/kubeguard-api -n kubeguard --timeout=120s
+```
+
+Deploy the test clients and apply the final ingress policy:
+
+```powershell
+kubectl apply -f k8s/scenarios/01-attacker.yaml
+kubectl apply -f k8s/scenarios/03-authorized-client.yaml
+kubectl wait -n kubeguard-attack --for=condition=Ready pod/attacker --timeout=90s
+kubectl wait -n kubeguard --for=condition=Ready pod/authorized-client --timeout=90s
+kubectl apply -f k8s/scenarios/02-networkpolicy.yaml
+```
+
+Compare access from the untrusted and authorized Pods:
+
+```powershell
+# Expected: connection failure (blocked)
+kubectl exec -n kubeguard-attack attacker -- curl -sS -i --max-time 8 http://kubeguard-api.kubeguard.svc.cluster.local:8000/events
+
+# Expected: HTTP 200 OK (allowed)
+kubectl exec -n kubeguard authorized-client -- curl -sS -i --max-time 8 http://kubeguard-api:8000/health
+```
+
+The original unauthorized HTTP 200 response was recorded **before** the
+NetworkPolicy was applied. The commands above reproduce the **final protected
+state**, not that initial insecure configuration. The temporary test Pods run
+for 24 hours and may need to be recreated if their status becomes `Succeeded`.
+These tests are intended only for this local lab; they do not change the SQLite PVC.
+
 ### Security Validation
 
 | Test | Result |
@@ -509,3 +560,4 @@ NetworkPolicies, FastAPI, Linux and YAML.
 **Security note:** NetworkPolicies enforce network
 segmentation but do not replace application authentication
 or Kubernetes RBAC.
+
